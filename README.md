@@ -1,2 +1,537 @@
-# argument-judge-
-an app that hears both sides of an argument and judges them to see which is the stronger side also does legal  arguments 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Argument Judge</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#1a1209; --parchment:#f5edd6; --parchment-dark:#e8dbb8;
+    --gold:#c9922a; --gold-light:#e8b84b; --red:#8b1a1a;
+    --green:#1a4a1a; --wood:#2d1b0e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--wood);
+    background-image:
+      repeating-linear-gradient(90deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px),
+      repeating-linear-gradient(0deg,transparent,transparent 8px,rgba(0,0,0,0.02) 8px,rgba(0,0,0,0.02) 10px);
+    min-height:100vh; font-family:'Crimson Text',Georgia,serif;
+    color:var(--ink); display:flex; flex-direction:column;
+    align-items:center; padding:40px 20px 80px;
+  }
+  .header{text-align:center;margin-bottom:36px;animation:fadeDown .8s ease both;}
+  .gavel-row{font-size:2.2rem;margin-bottom:8px;letter-spacing:8px;}
+  .title{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,6vw,4rem);font-weight:900;color:var(--gold-light);text-shadow:3px 3px 0 var(--wood),0 0 40px rgba(201,146,42,.4);letter-spacing:2px;line-height:1;}
+  .subtitle{font-family:'Courier Prime',monospace;font-size:.82rem;color:var(--parchment-dark);letter-spacing:4px;text-transform:uppercase;margin-top:10px;opacity:.7;}
+  .divider{width:300px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px auto;}
+  .court-paper{
+    background:var(--parchment);
+    background-image:radial-gradient(ellipse at 20% 10%,rgba(201,146,42,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 90%,rgba(139,26,26,.04) 0%,transparent 60%);
+    border:1px solid var(--gold);border-top:4px solid var(--gold);
+    box-shadow:0 8px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.3);
+    width:100%;max-width:800px;padding:48px 48px 40px;position:relative;animation:fadeUp .9s ease .2s both;
+  }
+  .court-paper::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--gold-light),var(--gold));}
+  .case-number{font-family:'Courier Prime',monospace;font-size:.75rem;color:var(--gold);letter-spacing:3px;text-align:center;margin-bottom:28px;opacity:.8;}
+
+  /* TIER TOGGLE */
+  .tier-toggle{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--gold);overflow:hidden;}
+  .tier-btn{flex:1;padding:14px 12px;background:transparent;border:none;cursor:pointer;font-family:'Courier Prime',monospace;font-size:.75rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);transition:background .2s,color .2s;position:relative;}
+  .tier-btn.active{background:var(--gold);color:var(--wood);}
+  .tier-btn:not(:last-child){border-right:1px solid var(--gold);}
+  .tier-label{display:block;font-size:.95rem;font-family:'Playfair Display',serif;font-weight:700;margin-bottom:3px;}
+  .tier-sub{font-size:.65rem;opacity:.7;}
+  .tier-btn.active .tier-sub{opacity:.9;}
+  .tier-badge{position:absolute;top:6px;right:8px;background:var(--red);color:var(--parchment);font-size:.55rem;padding:2px 5px;letter-spacing:1px;}
+
+  /* DEEP INFO */
+  .deep-info{display:none;background:rgba(26,74,26,.08);border:1px solid rgba(26,74,26,.3);padding:16px 20px;margin-bottom:24px;font-size:.9rem;line-height:1.7;color:var(--ink);}
+  .deep-info.visible{display:block;}
+  .deep-info strong{font-family:'Playfair Display',serif;color:var(--green);}
+  .deep-info ul{margin:8px 0 0 18px;}
+  .deep-info li{margin-bottom:4px;}
+
+  /* PARTIES */
+  .parties{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:start;margin-bottom:28px;}
+  .vs-badge{display:flex;align-items:center;justify-content:center;padding-top:32px;}
+  .vs-text{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;font-style:italic;color:var(--red);background:var(--parchment);border:2px solid var(--red);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
+  .party-label{font-family:'Courier Prime',monospace;font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:block;}
+  .party-name-input{width:100%;background:transparent;border:none;border-bottom:2px solid var(--parchment-dark);font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--ink);padding:4px 0 6px;margin-bottom:12px;outline:none;transition:border-color .2s;}
+  .party-name-input:focus{border-bottom-color:var(--gold);}
+  .party-name-input::placeholder{color:rgba(26,18,9,.3);font-weight:400;font-style:italic;}
+  textarea{width:100%;background:rgba(255,255,255,.4);border:1px solid var(--parchment-dark);border-radius:3px;font-family:'Crimson Text',Georgia,serif;font-size:1rem;line-height:1.6;color:var(--ink);padding:12px 14px;resize:vertical;min-height:130px;outline:none;transition:border-color .2s,box-shadow .2s;}
+  textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,146,42,.12);}
+  textarea::placeholder{color:rgba(26,18,9,.35);font-style:italic;}
+  .context-section{margin-bottom:28px;}
+  .context-label{font-family:'Courier Prime',monospace;font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;display:block;}
+  .context-note{font-size:.85rem;font-style:italic;color:rgba(26,18,9,.5);margin-bottom:8px;}
+
+  /* SUBMIT */
+  .btn-submit{width:100%;background:var(--red);color:var(--parchment);border:none;font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;letter-spacing:2px;padding:18px 32px;cursor:pointer;position:relative;overflow:hidden;transition:background .2s,transform .1s;text-transform:uppercase;}
+  .btn-submit::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,transparent 100%);}
+  .btn-submit:hover{background:#a01f1f;}
+  .btn-submit:active{transform:translateY(1px);}
+  .btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .error-msg{display:none;background:rgba(139,26,26,.1);border:1px solid var(--red);color:var(--red);padding:14px 18px;font-size:.95rem;margin-top:16px;font-style:italic;}
+  .error-msg.visible{display:block;}
+
+  /* PAYWALL */
+  .paywall-overlay{display:none;position:fixed;inset:0;background:rgba(20,10,0,.9);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .paywall-overlay.visible{display:flex;}
+  .paywall-box{background:var(--parchment);border:2px solid var(--gold);border-top:5px solid var(--gold);padding:48px 40px;max-width:500px;width:100%;text-align:center;box-shadow:0 20px 80px rgba(0,0,0,.8);animation:fadeUp .4s ease both;}
+  .paywall-icon{font-size:3rem;margin-bottom:16px;}
+  .paywall-title{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:900;color:var(--ink);margin-bottom:8px;}
+  .paywall-sub{font-size:1.05rem;color:rgba(26,18,9,.65);margin-bottom:24px;line-height:1.6;}
+  .paywall-features{text-align:left;background:rgba(201,146,42,.07);border:1px solid var(--parchment-dark);padding:16px 20px;margin-bottom:28px;}
+  .paywall-features li{font-size:.95rem;line-height:1.8;list-style:none;}
+  .paywall-features li::before{content:'✓ ';color:var(--green);font-weight:700;}
+  .paywall-price{font-family:'Playfair Display',serif;font-size:2.4rem;font-weight:900;color:var(--red);margin-bottom:4px;}
+  .paywall-price-note{font-size:.8rem;font-family:'Courier Prime',monospace;letter-spacing:2px;color:rgba(26,18,9,.5);margin-bottom:24px;text-transform:uppercase;}
+  .btn-pay{display:block;width:100%;background:var(--green);color:var(--parchment);border:none;font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;padding:16px;cursor:pointer;letter-spacing:1px;text-decoration:none;margin-bottom:12px;transition:background .2s;}
+  .btn-pay:hover{background:#255225;}
+  .btn-dismiss{background:transparent;border:1px solid var(--parchment-dark);color:rgba(26,18,9,.5);font-family:'Courier Prime',monospace;font-size:.75rem;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;width:100%;transition:border-color .2s;}
+  .btn-dismiss:hover{border-color:var(--gold);color:var(--gold);}
+  .btn-already-paid{background:transparent;border:none;color:var(--gold);font-family:'Courier Prime',monospace;font-size:.75rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:10px;text-decoration:underline;display:block;width:100%;}
+
+  /* LOADING */
+  .loading-state{text-align:center;padding:56px 20px;}
+  .gavel-anim{font-size:3rem;display:inline-block;animation:gavel .55s ease-in-out infinite alternate;transform-origin:bottom right;}
+  @keyframes gavel{from{transform:rotate(-30deg)}to{transform:rotate(10deg)}}
+  .loading-text{font-family:'Playfair Display',serif;font-style:italic;font-size:1.2rem;color:var(--gold);margin-top:16px;}
+  .loading-sub{font-size:.9rem;color:rgba(26,18,9,.5);margin-top:6px;}
+  .loading-dots::after{content:'';animation:dots 1.4s infinite;}
+  @keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}100%{content:'.'}}
+
+  /* VERDICT */
+  .verdict-header{text-align:center;border:2px solid var(--gold);padding:20px;margin-bottom:28px;}
+  .verdict-stamp{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;color:var(--red);letter-spacing:6px;text-transform:uppercase;border:3px solid var(--red);display:inline-block;padding:4px 20px;transform:rotate(-2deg);margin-bottom:10px;box-shadow:2px 2px 0 rgba(139,26,26,.3);}
+  .verdict-type-badge{display:inline-block;font-family:'Courier Prime',monospace;font-size:.65rem;letter-spacing:3px;text-transform:uppercase;padding:3px 10px;margin-bottom:6px;border:1px solid currentColor;}
+  .verdict-type-badge.standard{color:var(--gold);border-color:var(--gold);}
+  .verdict-type-badge.deep{color:var(--green);border-color:var(--green);}
+  .verdict-case-ref{font-family:'Courier Prime',monospace;font-size:.75rem;color:rgba(26,18,9,.5);letter-spacing:2px;margin-top:4px;}
+  .ruling-box{background:rgba(139,26,26,.06);border-left:4px solid var(--red);padding:14px 18px;margin-bottom:20px;font-size:1.1rem;font-style:italic;line-height:1.7;}
+  .vsection{margin-bottom:20px;}
+  .vsection-title{font-family:'Playfair Display',serif;font-size:.78rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--parchment-dark);padding-bottom:4px;margin-bottom:10px;}
+  .vsection-content{font-size:1.05rem;line-height:1.8;}
+  .legal-box{background:rgba(26,74,26,.06);border:1px solid rgba(26,74,26,.25);padding:14px 18px;font-size:.95rem;line-height:1.8;font-style:italic;color:rgba(26,18,9,.75);}
+  .legal-box strong{color:var(--green);font-style:normal;}
+  .verdict-seal{text-align:center;margin-top:28px;padding-top:24px;border-top:1px solid var(--parchment-dark);}
+  .seal-icon{font-size:2.5rem;}
+  .seal-text{font-family:'Courier Prime',monospace;font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-top:6px;opacity:.7;}
+  .disclaimer{font-family:'Courier Prime',monospace;font-size:.62rem;letter-spacing:1px;color:rgba(26,18,9,.4);text-align:center;margin-top:16px;line-height:1.6;}
+  .action-bar{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;}
+  .btn-action{flex:1;min-width:130px;padding:12px 14px;border:2px solid var(--gold);background:transparent;color:var(--gold);font-family:'Courier Prime',monospace;font-size:.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s;white-space:nowrap;}
+  .btn-action:hover{background:var(--gold);color:var(--wood);}
+  .btn-action.copied{background:var(--green);border-color:var(--green);color:var(--parchment);}
+  .btn-action.new-case{border-color:var(--red);color:var(--red);}
+  .btn-action.new-case:hover{background:var(--red);color:var(--parchment);}
+
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .footer{margin-top:32px;font-family:'Courier Prime',monospace;font-size:.7rem;color:rgba(245,237,214,.3);letter-spacing:2px;text-align:center;animation:fadeUp 1s ease .5s both;}
+
+  @media(max-width:600px){
+    .court-paper{padding:24px 18px;}
+    .parties{grid-template-columns:1fr;gap:16px;}
+    .vs-badge{padding-top:0;justify-content:flex-start;}
+    .tier-toggle{flex-direction:column;}
+    .tier-btn:not(:last-child){border-right:none;border-bottom:1px solid var(--gold);}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="gavel-row">⚖️</div>
+  <div class="title">THE ARGUMENT JUDGE</div>
+  <div class="divider"></div>
+  <div class="subtitle">Impartial. Merciless. Final.</div>
+</div>
+
+<!-- INPUT -->
+<div class="court-paper" id="inputSection">
+  <div class="case-number" id="caseNumber">CASE NO. ——————</div>
+
+  <div class="tier-toggle">
+    <button class="tier-btn active" id="btnStandard" onclick="setTier('standard')">
+      <span class="tier-label">Standard Verdict</span>
+      <span class="tier-sub">Free · Core ruling + analysis</span>
+    </button>
+    <button class="tier-btn" id="btnDeep" onclick="setTier('deep')">
+      <div class="tier-badge">PREMIUM</div>
+      <span class="tier-label">Deep Verdict</span>
+      <span class="tier-sub">$4.99 · Psych + legal deep dive</span>
+    </button>
+  </div>
+
+  <div class="deep-info" id="deepInfo">
+    <strong>Deep Verdict includes everything in Standard, plus:</strong>
+    <ul>
+      <li>Psychological profile of both parties' behavior patterns</li>
+      <li>Applicable legal principles &amp; relevant doctrines by name</li>
+      <li>How a real court or mediator would likely approach this</li>
+      <li>Step-by-step resolution roadmap with specific language</li>
+      <li>Long-term risk assessment — relational, financial, legal</li>
+    </ul>
+  </div>
+
+  <div class="parties">
+    <div class="party">
+      <span class="party-label">The Plaintiff</span>
+      <input type="text" class="party-name-input" id="name1" placeholder="Your name" maxlength="40">
+      <textarea id="side1" placeholder="State your case. What happened? Why are you right? Be specific — the Judge rewards detail." rows="5"></textarea>
+    </div>
+    <div class="vs-badge"><div class="vs-text">vs</div></div>
+    <div class="party">
+      <span class="party-label">The Defendant</span>
+      <input type="text" class="party-name-input" id="name2" placeholder="Their name" maxlength="40">
+      <textarea id="side2" placeholder="Their side of the story. Present it honestly — the Judge penalizes misrepresentation of the opposition." rows="5"></textarea>
+    </div>
+  </div>
+
+  <div class="context-section">
+    <span class="context-label">Background Context <span style="opacity:.5">(optional but helps)</span></span>
+    <p class="context-note">Relationship, history, money involved, location, relevant dates, any written agreements, etc.</p>
+    <textarea id="context" placeholder="e.g. Roommates for 2 years. Dispute over $800 security deposit. Lease ended March 2024. No written cleaning agreement..." rows="3"></textarea>
+  </div>
+
+  <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">🔨 &nbsp; Submit to the Court</button>
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<!-- LOADING -->
+<div class="court-paper" id="loadingSection" style="display:none">
+  <div class="loading-state">
+    <div class="gavel-anim">🔨</div>
+    <div class="loading-text">The Judge is deliberating<span class="loading-dots"></span></div>
+    <div class="loading-sub" id="loadingSub">Weighing evidence. Consulting precedent. Preparing ruling.</div>
+  </div>
+</div>
+
+<!-- VERDICT -->
+<div class="court-paper" id="verdictSection" style="display:none">
+  <div class="verdict-header">
+    <div class="verdict-stamp">Verdict</div><br>
+    <span class="verdict-type-badge standard" id="verdictBadge">Standard Ruling</span>
+    <div class="verdict-case-ref" id="verdictRef"></div>
+  </div>
+  <div id="verdictBody"></div>
+  <div class="verdict-seal">
+    <div class="seal-icon">⚖️</div>
+    <div class="seal-text">So Ruled — The Argument Judge — Court Adjourned</div>
+  </div>
+  <div class="disclaimer">FOR ENTERTAINMENT &amp; INFORMATIONAL PURPOSES ONLY · NOT LEGAL ADVICE · CONSULT A LICENSED ATTORNEY FOR LEGAL MATTERS</div>
+  <div class="action-bar">
+    <button class="btn-action" id="btnCopy" onclick="copyVerdict()">📋 &nbsp; Copy Verdict</button>
+    <button class="btn-action" id="btnShare" onclick="shareVerdict()">🔗 &nbsp; Share</button>
+    <button class="btn-action new-case" onclick="newCase()">↩ &nbsp; New Case</button>
+  </div>
+</div>
+
+<!-- PAYWALL -->
+<div class="paywall-overlay" id="paywallOverlay">
+  <div class="paywall-box">
+    <div class="paywall-icon">⚖️</div>
+    <div class="paywall-title">Deep Verdict</div>
+    <div class="paywall-sub">Full psychological analysis, applicable law, and a concrete resolution roadmap.</div>
+    <ul class="paywall-features">
+      <li>Psychological profile of both parties</li>
+      <li>Applicable legal doctrines by name</li>
+      <li>How a real court would likely view this</li>
+      <li>Step-by-step resolution with specific language</li>
+      <li>Long-term risk assessment</li>
+    </ul>
+    <div class="paywall-price">$4.99</div>
+    <div class="paywall-price-note">One-time · Instant delivery</div>
+    <a href="https://ko-fi.com" target="_blank" class="btn-pay" onclick="markPaid()">Unlock Deep Verdict →</a>
+    <button class="btn-dismiss" onclick="closePaywall()">Maybe later</button>
+    <button class="btn-already-paid" onclick="alreadyPaid()">I already paid → continue</button>
+  </div>
+</div>
+
+<div class="footer">THE ARGUMENT JUDGE · ALL VERDICTS ARE FINAL · EST. TODAY</div>
+
+<script>
+let tier = 'standard';
+let paid = false;
+let caseNo = '';
+let rawVerdict = '';
+
+// init
+caseNo = genCase();
+document.getElementById('caseNumber').textContent = caseNo;
+
+function genCase(){
+  return `CASE NO. ${new Date().getFullYear()}-ARG-${Math.floor(Math.random()*90000)+10000}`;
+}
+
+function setTier(t){
+  tier = t;
+  document.getElementById('btnStandard').classList.toggle('active', t==='standard');
+  document.getElementById('btnDeep').classList.toggle('active', t==='deep');
+  document.getElementById('deepInfo').classList.toggle('visible', t==='deep');
+}
+
+function handleSubmit(){
+  const s1 = document.getElementById('side1').value.trim();
+  const s2 = document.getElementById('side2').value.trim();
+  clearErr();
+  if(!s1||!s2){ showErr('Both parties must present their case before this Court can rule.'); return; }
+  if(tier==='deep' && !paid){ document.getElementById('paywallOverlay').classList.add('visible'); return; }
+  runVerdict();
+}
+
+function markPaid(){ setTimeout(()=>{ paid=true; }, 4000); }
+function closePaywall(){ document.getElementById('paywallOverlay').classList.remove('visible'); }
+function alreadyPaid(){ paid=true; closePaywall(); runVerdict(); }
+
+// ── SYSTEM PROMPT ──────────────────────────────────────────────────────────────
+const SYS = `You are The Argument Judge — a rigorously impartial, analytically precise arbiter of disputes. Your role is to deliver fair, evidence-based verdicts that both parties can trust.
+
+NEUTRALITY RULES:
+- You hold no bias toward any party based on gender, age, race, relationship role, or emotional presentation.
+- You evaluate evidence and logic only. Emotional intensity, volume, or persistence are not evidence.
+- You never artificially split fault to appear balanced. If one party is clearly more at fault, say so. If fault is genuinely shared, say that.
+- You apply the principle of charity: interpret each party's argument in its strongest possible form before evaluating it.
+- You identify logical fallacies, deflection, manipulation, or bad-faith arguments when present — and name them plainly.
+
+LEGAL KNOWLEDGE (when applicable):
+You have working knowledge of the following areas of law and apply them when relevant:
+- Contract Law: offer/acceptance, consideration, breach, promissory estoppel, unjust enrichment, implied contracts
+- Tort Law: negligence, duty of care, reasonable person standard, proximate cause, damages
+- Landlord-Tenant Law: security deposits, habitability, notice requirements, wrongful eviction
+- Employment Law: wrongful termination, at-will employment, hostile work environment, wage theft
+- Family Law: custody standards, marital property, best interest of the child
+- Property Law: adverse possession, easements, trespass, nuisance
+- Consumer Protection: warranty, fraud, misrepresentation, right to refund
+- Contract Defenses: duress, unconscionability, mistake, frustration of purpose
+
+When legal principles apply, name the relevant doctrine. Explain how courts typically approach the dispute type. Make clear this is informational, not legal advice.
+
+TONE: Authoritative and direct. No hedging to protect feelings. No bias toward any party.`;
+
+async function runVerdict(){
+  const n1 = document.getElementById('name1').value.trim() || 'Plaintiff';
+  const n2 = document.getElementById('name2').value.trim() || 'Defendant';
+  const s1 = document.getElementById('side1').value.trim();
+  const s2 = document.getElementById('side2').value.trim();
+  const ctx = document.getElementById('context').value.trim();
+
+  closePaywall(); showLoading();
+
+  const prompt = tier==='deep' ? deepPrompt(n1,n2,s1,s2,ctx) : stdPrompt(n1,n2,s1,s2,ctx);
+  const maxTok = tier==='deep' ? 1800 : 1000;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:maxTok,
+        system:SYS,
+        messages:[{role:"user",content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).map(b=>b.text||'').join('');
+    if(!text) throw new Error('empty');
+    rawVerdict = text;
+    renderVerdict(text, n1, n2);
+  } catch(e){
+    showInput();
+    showErr('The Court experienced a technical difficulty. Please resubmit.');
+    console.error(e);
+  }
+}
+
+function stdPrompt(n1,n2,s1,s2,ctx){
+  return `Evaluate this dispute and deliver a Standard Verdict.
+
+${n1}'s position: "${s1}"
+${n2}'s position: "${s2}"
+${ctx?`Background: "${ctx}"`:''}
+
+Use EXACTLY these section headers (all caps, on their own line):
+
+THE RULING
+One clear paragraph stating who bears more fault and why. Be direct, no hedging.
+
+WHAT ${n1.toUpperCase()} GETS RIGHT
+2-3 sentences on valid points in ${n1}'s position.
+
+WHERE ${n1.toUpperCase()} FALLS SHORT
+2-3 sentences on logical gaps, deflections, or unfair assumptions in ${n1}'s case.
+
+WHAT ${n2.toUpperCase()} GETS RIGHT
+2-3 sentences on valid points in ${n2}'s position.
+
+WHERE ${n2.toUpperCase()} FALLS SHORT
+2-3 sentences on logical gaps, deflections, or unfair assumptions in ${n2}'s case.
+
+WHAT THIS IS REALLY ABOUT
+2-3 sentences identifying the deeper unspoken conflict underneath the surface argument.
+
+${hasLegalElements(s1+s2+ctx)?`LEGAL PRINCIPLES\nIdentify the relevant area of law and applicable doctrines by name. Explain how courts typically approach this type of dispute. One paragraph. Remind parties this is informational only.\n\n`:''}THE COURT'S ORDER
+One specific, concrete directive for each person. Not "communicate better" — actual next steps with specific language or actions where useful.
+
+Keep verdict under 500 words. Be precise, fair, direct.`;
+}
+
+function deepPrompt(n1,n2,s1,s2,ctx){
+  return `Evaluate this dispute and deliver a comprehensive Deep Verdict.
+
+${n1}'s position: "${s1}"
+${n2}'s position: "${s2}"
+${ctx?`Background: "${ctx}"`:''}
+
+Use EXACTLY these section headers (all caps, on their own line):
+
+THE RULING
+Direct unambiguous ruling. Who bears more fault and why. One paragraph.
+
+WHAT ${n1.toUpperCase()} GETS RIGHT
+2-3 sentences. Specific valid points only.
+
+WHERE ${n1.toUpperCase()} FALLS SHORT
+2-3 sentences. Name logical fallacies, deflections, or bad-faith moves if present.
+
+WHAT ${n2.toUpperCase()} GETS RIGHT
+2-3 sentences. Specific valid points only.
+
+WHERE ${n2.toUpperCase()} FALLS SHORT
+2-3 sentences. Name logical fallacies, deflections, or bad-faith moves if present.
+
+PSYCHOLOGICAL ANALYSIS
+What behavior pattern, defense mechanism, or communication style is each party displaying? What does the way each person argues reveal about them? 3-4 sentences per person. Insightful, not cruel.
+
+WHAT THIS IS REALLY ABOUT
+3-4 sentences. The deeper unspoken need, fear, or unresolved dynamic driving the argument.
+
+LEGAL PRINCIPLES
+Name the relevant area(s) of law. Name applicable doctrines (e.g. "implied covenant of good faith," "reasonable person standard," "unjust enrichment," "duty of care"). Explain how a court or arbitrator would likely approach this dispute type and what outcome would be considered fair under those principles. 4-6 sentences. Remind parties this is informational only.
+
+RESOLUTION ROADMAP
+Numbered steps. Concrete and specific for both parties. Include suggested language or specific actions where useful.
+
+RISK ASSESSMENT
+What happens if this isn't resolved? Realistic short and long-term consequences for each party — relational, financial, legal. 3-4 sentences.
+
+Keep verdict under 900 words. Be rigorous, specific, genuinely useful.`;
+}
+
+function hasLegalElements(text){
+  const kw=['money','paid','owe','contract','lease','rent','deposit','agreement','fired','employer','landlord','lawsuit','court','police','stolen','debt','loan','refund','warranty','property','damage','sue','legal','rights'];
+  const t=text.toLowerCase();
+  return kw.some(k=>t.includes(k));
+}
+
+// ── RENDER ──────────────────────────────────────────────────────────────────
+function renderVerdict(text, n1, n2){
+  document.getElementById('loadingSection').style.display='none';
+  document.getElementById('verdictSection').style.display='block';
+
+  const badge = document.getElementById('verdictBadge');
+  if(tier==='deep'){ badge.textContent='Deep Verdict'; badge.className='verdict-type-badge deep'; }
+  else { badge.textContent='Standard Ruling'; badge.className='verdict-type-badge standard'; }
+  document.getElementById('verdictRef').textContent = `${caseNo} · ${n1.toUpperCase()} vs. ${n2.toUpperCase()}`;
+
+  // Parse into sections by all-caps header lines
+  const lines = text.split('\n');
+  const HEADER_RE = /^[A-Z][A-Z\s'()&]+[A-Z)']$/;
+  let sections = [];
+  let cur = null;
+
+  for(const line of lines){
+    const t = line.trim();
+    if(t && HEADER_RE.test(t) && t.length > 3 && t.length < 80){
+      if(cur) sections.push(cur);
+      cur = { title: t, lines: [] };
+    } else {
+      if(cur) cur.lines.push(line);
+      else cur = { title: '', lines: [line] };
+    }
+  }
+  if(cur) sections.push(cur);
+
+  let html = '';
+  for(const sec of sections){
+    const content = sec.lines.join('\n').trim();
+    if(!content) continue;
+    const fmt = content
+      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\n\n/g,'</p><p>')
+      .replace(/\n/g,'<br>');
+
+    if(!sec.title || sec.title==='THE RULING'){
+      html += `<div class="ruling-box"><p>${fmt}</p></div>`;
+    } else {
+      const isLegal = /LEGAL|PRECEDENT/.test(sec.title);
+      const inner = isLegal
+        ? `<div class="legal-box"><p>${fmt}</p></div>`
+        : `<div class="vsection-content"><p>${fmt}</p></div>`;
+      html += `<div class="vsection"><div class="vsection-title">${sec.title}</div>${inner}</div>`;
+    }
+  }
+
+  document.getElementById('verdictBody').innerHTML = html ||
+    `<div class="vsection-content">${text.replace(/\n/g,'<br>')}</div>`;
+}
+
+// ── COPY / SHARE ──────────────────────────────────────────────────────────────
+function copyVerdict(){
+  const n1 = document.getElementById('name1').value.trim()||'Plaintiff';
+  const n2 = document.getElementById('name2').value.trim()||'Defendant';
+  const header = `⚖️ THE ARGUMENT JUDGE\n${caseNo}\n${n1.toUpperCase()} vs. ${n2.toUpperCase()}\n${'─'.repeat(50)}\n\n`;
+  const footer = `\n\n${'─'.repeat(50)}\nFor entertainment & informational purposes only. Not legal advice.`;
+  const full = header + rawVerdict + footer;
+  navigator.clipboard.writeText(full).then(()=>{
+    const b = document.getElementById('btnCopy');
+    b.textContent='✓  Copied!'; b.classList.add('copied');
+    setTimeout(()=>{ b.textContent='📋  Copy Verdict'; b.classList.remove('copied'); },2500);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=full; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
+
+function shareVerdict(){
+  const n1 = document.getElementById('name1').value.trim()||'Plaintiff';
+  const n2 = document.getElementById('name2').value.trim()||'Defendant';
+  const msg = `⚖️ I just got my argument judged by AI.\n${n1} vs. ${n2} — the verdict is in.\nTry it yourself:`;
+  if(navigator.share){
+    navigator.share({title:'The Argument Judge',text:msg,url:window.location.href}).catch(()=>{});
+  } else {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(msg+' '+window.location.href)}`,'_blank');
+  }
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function showLoading(){
+  document.getElementById('inputSection').style.display='none';
+  document.getElementById('loadingSection').style.display='block';
+  document.getElementById('verdictSection').style.display='none';
+  document.getElementById('loadingSub').textContent = tier==='deep'
+    ? 'Consulting legal precedent. Profiling parties. Building case file.'
+    : 'Weighing evidence. Reviewing testimony. Preparing ruling.';
+}
+function showInput(){
+  document.getElementById('inputSection').style.display='block';
+  document.getElementById('loadingSection').style.display='none';
+  document.getElementById('verdictSection').style.display='none';
+}
+function showErr(m){ const e=document.getElementById('errorMsg'); e.textContent=m; e.classList.add('visible'); }
+function clearErr(){ document.getElementById('errorMsg').classList.remove('visible'); }
+function newCase(){
+  ['side1','side2','context','name1','name2'].forEach(id=>document.getElementById(id).value='');
+  rawVerdict=''; caseNo=genCase();
+  document.getElementById('caseNumber').textContent=caseNo;
+  setTier('standard'); showInput();
+}
+</script>
+</body>
+</html>
+
